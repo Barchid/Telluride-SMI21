@@ -8,7 +8,6 @@ Neurorobotics Platform (NRP) experience code used in the SMI Project for the Tel
 - Be sure to have the [local NRP on Docker](https://neurorobotics.net/local_install.html) up and running.
     - ***Warning: the Windows Version on WSL2 is quite slow. Running on Linux is recommended.***
 - For simplicity during development, [attach your running NRP backend container on VSCode](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) with the Remote Containers extension. See [the tutorial of Antoine Detailler](https://www.youtube.com/watch?v=II2lpieBYe4&list=PLG-iqBTOyCO7pMslHsrsOm1qgvtdOwx0f&index=7) for more information.
-- Open an interactive terminal inside the Docker NRP (or in the attached Visual Studio Code window).
 - **Download this repository as a ZIP file** and import it in the NRP using the "Import Zip" button
 ![Import_ZIp](./Import_Zip.png) 
 
