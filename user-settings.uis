@@ -45,8 +45,6 @@
       "content": [
         {
           "type": "stack",
-          "width": 47.05882352941176,
-          "height": 100,
           "isClosable": true,
           "reorderEnabled": true,
           "title": "",
@@ -74,7 +72,6 @@
       "isClosable": true,
       "reorderEnabled": true,
       "title": "",
-      "width": 47.05882352941176,
       "openPopouts": [],
       "maximisedItemId": null
     }

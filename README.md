@@ -1,5 +1,5 @@
 # Telluride 2021: Sensory Motor Integration Project
-Neurorobotics Platform (NRP) experience code used in the SMI Project for the Telluride Neuromorphic Engineering Workshop 2021. The whole repository can be imported in
+Neurorobotics Platform (NRP) experience code used in the SMI Project for the Telluride Neuromorphic Engineering Workshop 2021.
 
 ## Dependencies
 - Neurorobotics Platform 3
