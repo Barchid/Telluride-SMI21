@@ -21,7 +21,7 @@ This quick guide is here to help you install dependencies into separated virtual
 ```bash
 docker exec -it nrp bash
 ```
-- Type de following commands :
+- Type the following instructions:
 ```bash
 # create the virtual env named "pytorch" 
 virtualenv ~/.opt/pytorch
