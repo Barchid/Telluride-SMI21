@@ -1,0 +1,155 @@
+#!/usr/bin/env python
+"""
+This file is a state-machine prototype for the husky labyrinth demo.
+The MNIST digits on the screen indicate the fitness of the path (1 is least optimal, 9 is most optimal)
+For example: if a screen shows 9, then the robot will go towards it. As soon as the robot leaves this screen, 
+the digit will be changed to 1, since going back is the least optimal solution.
+The robot will learn to follow the screens that show digit 9 to navigate the maze using the most optimal path.
+
+"""
+
+__author__ = 'HBP, Xuanyu Wu'
+
+import rospy
+import smach
+from smach import StateMachine, CBState
+from hbp_nrp_excontrol.logs import clientLogger
+from hbp_nrp_excontrol.nrp_states import (WaitToClockState, RobotPoseMonitorState,
+                                          SetMaterialColorServiceState)
+
+FINISHED = 'FINISHED'
+ERROR = 'ERROR'
+PREEMPTED = 'PREEMPTED'
+
+ROBOT_ID = 'husky'
+
+sm = StateMachine(outcomes=[FINISHED, ERROR, PREEMPTED])
+
+hotspots = [lambda ud, p: not ((6.2 < p.position.x < 8.0) and (-4.0 < p.position.y < -1.3)),
+            lambda ud, p: not ((5.8 < p.position.x < 8.0) and (4.0 < p.position.y < 6.0)),
+            lambda ud, p: not ((-0.29 < p.position.x < 0.36879) and (3.15 < p.position.y < 6.0)),
+            lambda ud, p: not ((-2 < p.position.x < 1) and (-0.44192 < p.position.y < 0.79615)),
+            lambda ud, p: not ((-6.69517 < p.position.x < -5.09197) and (
+                    -1.25467 < p.position.y < 0.67082)),
+            lambda ud, p: not ((-7.05 < p.position.x < -4.26) and (
+                    -7 < p.position.y < -5.5)),
+            lambda ud, p: not (
+                    (-1 < p.position.x < 1) and (-7 < p.position.y < -5)), 
+            lambda ud, p: not ((4 < p.position.x < 5.2) and (0.2 < p.position.y < 1)),
+            lambda ud, p: not ((2 < p.position.x < 3) and (1.5 < p.position.y < 2.5)),
+            lambda ud, p: not ((-3 < p.position.x < -2) and (-4 < p.posision.y < -4)),
+            lambda ud, p: not ((-3 < p.position.x < -2) and (4.5 < p.position.y < 5.5)),
+            lambda ud, p: not ((-7.5 < p.position.x < -6.5) and (3 < p.position.y < 4.2)),
+            lambda ud, p: not ((-5.5 < p.position.x < -4.2) and (1.2 < p.position.y < 2.5))]
+
+goal_hostspot = lambda ud, p: not ( (-1.2 < p.position.x < 1.2) and (-12 < p.position.y < -11.5) )
+
+#goal_hostspot = lambda ud, p: not ((-1.5 < p.position.x < 1.5) and (-14 < p.position.y < -11.6))
+
+# Names of the hand-written digits texture files in the assets/textures directory
+digits_textures = [f"{i}.png" for i in range(10)]
+
+LOGO = "telluride_logo.png"
+
+
+ONE = "1.png"
+
+# callback for the "initial_message" CBState
+def notify_user_cb(msg):
+    @smach.cb_interface(outcomes=['finished'])
+    def notify_user(userdata):
+        clientLogger.advertise(msg)  # Show info message at the top of the screen
+        return 'finished'
+
+    return notify_user
+
+
+with sm:
+    # Waits 5 seconds from the start of the experiment before showing the message
+    StateMachine.add(
+        "initial_timeline_condition",
+        WaitToClockState(5),
+        transitions={'valid': 'initial_timeline_condition',
+                     'invalid': 'initial_message',
+                     'preempted': PREEMPTED}
+    )
+
+    # executes the callback notify_user_cb that shows a message
+    StateMachine.add(
+        'initial_message',
+        CBState(notify_user_cb(
+            "In this demo, the husky will try to escape a labyrinth by evaluating the fitness of the path using the digit one the screen...")),
+        transitions={'finished': 'wait_for_husky_hotspot_0'}
+    )
+
+    link_name = "vr_screen::body"
+    visual_name = "screen_glass"
+
+    # Create State machine states
+    for i, hotspot in enumerate(hotspots):
+
+        rospy.loginfo(f"Adding spotlight_{i}")
+
+        # Check the robot position in the world: i.e. check that the robot has entered a hotspot
+        StateMachine.add(
+            f"wait_for_husky_hotspot_{i}",
+            RobotPoseMonitorState(ROBOT_ID, hotspot),
+            transitions={'valid': f'wait_for_husky_hotspot_{i}',
+                         'invalid': f'set_screen_one_{i}',
+                         'preempted': PREEMPTED}
+        )
+
+        if i >= len(hotspots) - 1:
+
+            # Change the i-th screen digit to one
+            StateMachine.add(
+                f"set_screen_one_{i}",
+                SetMaterialColorServiceState(f"virtual_screen_{i}",
+                                             link_name,
+                                             visual_name,
+                                             ONE),
+                transitions={"succeeded": "wait_for_husky_hotspot_end",
+                             "aborted": FINISHED,
+                             "preempted": PREEMPTED}
+            )
+
+
+            StateMachine.add(
+                "wait_for_husky_hotspot_end",
+                RobotPoseMonitorState(ROBOT_ID, goal_hostspot),
+                transitions={'valid': 'wait_for_husky_hotspot_end',
+                             'invalid': 'set_screen_end_logo',
+                             'preempted': PREEMPTED}
+            )
+            
+
+            StateMachine.add(
+                "set_screen_end_logo",
+                SetMaterialColorServiceState(f'virtual_screen_{i + 1}',
+                                             link_name,
+                                             visual_name,
+                                             LOGO),
+                transitions={'succeeded': 'terminate_demo',
+                             'aborted': ERROR,
+                             'preempted': PREEMPTED}
+            )
+
+            StateMachine.add(
+                'terminate_demo',
+                CBState(notify_user_cb("The husky reached its destination!")),
+                transitions={'finished': FINISHED}
+            )
+
+        else:
+            StateMachine.add(
+                f"set_screen_one_{i}",
+                SetMaterialColorServiceState(f"virtual_screen_{i}",
+                                             link_name,
+                                             visual_name,
+                                             ONE),
+                transitions={'succeeded': f"wait_for_husky_hotspot_{i + 1}",
+                             'aborted': ERROR,
+                             'preempted': PREEMPTED}
+            )
+
+

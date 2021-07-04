@@ -1,0 +1,25 @@
+<ExD 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+  xmlns="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig" xsi:schemaLocation="http://schemas.humanbrainproject.eu/SP10/2014/ExDConfig ../ExDConfFile.xsd">
+  <name>Telluride Husky Maze demo experiment</name>
+  <thumbnail>ExDTellurideMazeHusky.jpg</thumbnail>
+  <description>In this experiment the robot will find his path in a maze by following red screens.</description>
+  <tags>husky robotics maze labyrinth telluride demo</tags>
+  <timeout>14400</timeout>
+  <configuration type="3d-settings" src="ExDDemoHuskySBC.ini" />
+  <configuration type="brainvisualizer" src="brainvisualizer.json" />
+  <configuration type="user-interaction-settings" src="ExDDemoHuskySBC.uis" />
+  <maturity>production</maturity>
+  <environmentModel src="spacebotcup_world.sdf">
+    <robotPose robotId="husky" x="1.33815" y="-2.528" z="1.084" roll="0.0" pitch="0.0" yaw="0.0" />
+  </environmentModel>
+  <bibiConf src="bibi_configuration.bibi" />
+  <experimentControl>
+    <stateMachine id="ScreenSwitcher" src="ScreenSwitcher.exd" xsi:type="SMACHStateMachine" />
+  </experimentControl>
+  <cameraPose>
+    <cameraPosition x="11.090271978222098" y="-0.5979270020610832" z="9.025477327075356" />
+    <cameraLookAt x="1.33815" y="-2.528" z="1.084" />
+  </cameraPose>
+  <cloneDate>2021-06-24T15:17:53</cloneDate>
+</ExD>
