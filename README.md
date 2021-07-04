@@ -77,3 +77,18 @@ def example_pytorch(t):
         clientLogger.info('Time: ', tensor)
 ```
 - When you run a simulation, you will see the time printed every 2 secondes in the console logger inside the experiment.
+
+### Git management of this repository within the NRP
+To facilitate the collaboration between all contributors during the project, try to commit and push changes directly inside the docker container when you're working on the NRP. If you installed the Experiment in the NRP as showed in [the "Get Started" section](#get-started), you can directly commit changes by using a docker interactive terminal.
+
+- Open a docker interactive terminal and keep it during your work on the NRP:
+```bash
+# Open the docker terminal
+docker exec -it nrp bash
+
+# change directory to the experiment sources (this repository)
+cd ~/.opt/nrpStorage/telluride_maze_husky_0_0_0
+```
+- Have fun playing with the sources!
+- Now you can `git commit` or `git push` as you wish.
+- **KEEP THE MAIN BRANCH CLEAN!**. Creating branches is strongly recommended.
