@@ -11,7 +11,7 @@ def eye_sensor_transmit(t, visual_extractor, camera, red_left_eye, red_right_eye
     if not isinstance(camera.value, type(None)) and visual_extractor.value is not None:
         cv_image = bridge.imgmsg_to_cv2(camera.value, "rgb8")
         #clientLogger.info(cv_image.shape)
-        test_im = visual_extractor.value(cv_image)
+        test_im = visual_extractor.value.run(cv_image.astype(float))
         clientLogger.info(test_im)
 
     image_results = hbp_nrp_cle.tf_framework.tf_lib.detect_red(image=camera.value)

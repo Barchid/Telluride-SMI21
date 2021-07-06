@@ -6,11 +6,13 @@ def init_vonenet(t, visual_extractor):
         
         import site, os
         # WARNING: the path can change according to the python version you chose when initializing the virtualenv
-        site.addsitedir(os.path.expanduser('~/.opt/pytorch/lib/python3.8/site-packages'))
+        site.addsitedir(os.path.expanduser('~/.opt/tensorflow/lib/python3.8/site-packages'))
         
-        # VONENET ARCHITECTURE
-        import torch
-        visual_extractor.value = torch.load('visual_extractor.pt')
+        # ONNX ARCHITECTURE
+        import onnx
+        from onnx_tf.backend import prepare
+
+        visual_extractor.value = prepare(onnx.load('visual_extractor.onnx'))
         clientLogger.info(visual_extractor.value)
         clientLogger.info('visual_extractor VARIABLE CORRECTLY INITIALIZED')
         

@@ -14,8 +14,8 @@ Neurorobotics Platform (NRP) experience code used in the SMI Project for the Tel
 
 ## Quick guides
 
-### Install PyTorch into a VirtualEnv and use in Transfer Functions
-This quick guide is here to help you install dependencies into separated virtualenvs. Here, we will install `pytorch-cpu` (latest stable version) in a `virtualenv` and build a Transfer Function to use it.
+### Install Tensorflow into a VirtualEnv and use in Transfer Functions
+This quick guide is here to help you install dependencies into separated virtualenvs. Here, we will install `tensorflow-cpu` (latest stable version) in a `virtualenv` and build a Transfer Function to use it.
 
 - Open an interactive terminal inside the Docker NRP (or in the attached Visual Studio Code window).
 ```bash
@@ -23,60 +23,31 @@ docker exec -it nrp bash
 ```
 - Type the following instructions:
 ```bash
-# create the virtual env named "pytorch" 
-virtualenv ~/.opt/pytorch
+# create the virtual env named "tensorflow" 
+virtualenv ~/.opt/tensorflow
 
 # activate it
-source ~/.opt/pytorch/bin/activate
+source ~/.opt/tensorflow/bin/activate
 
 # install dependencies
-pip install torch==1.9.0+cpu torchvision==0.10.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+pip install tensorflow
 ```
 - Create a Transfer Function and copy the following code:
 ```python
 @nrp.Robot2Neuron()
-def example_pytorch(t):
+def example_tensorflow(t):
     # make PyTorch available from home directory installation
     import site, os
     # WARNING: the path can change according to the python version you chose when initializing the virtualenv
-    site.addsitedir(os.path.expanduser('~/.opt/pytorch/lib/python3.8/site-packages'))
+    site.addsitedir(os.path.expanduser('~/.opt/tensorflow/lib/python3.8/site-packages'))
     
     # output the time as a PyTorch tensor every 2s
-    import torch
-    tensor = torch.Tensor([t])
+    import tensorflow as tf
+    tensor = tf.constant([t])
     if t % 2 < 0.02:
         clientLogger.info('Time: ', tensor)
 ```
 - When you run a simulation, you will see the time printed every 2 secondes in the console logger inside the experiment.
-
-### Install PyTorch in the platform environment (no additional virtualenv)
-You can also install a pip package without having to create a virtualenv. To do so, you have to use directly the experiment's virtualenv. **Note that you may deal with conflicts in dependencies by doing so. Consequently, it is not recommended.**
-
-- Open an interactive terminal inside the Docker NRP (or in the attached Visual Studio Code window).
-```bash
-docker exec -it nrp bash
-```
-- Type de following commands :
-```bash
-# activate the 'platform_venv' virtualenv
-source ~/.opt/platform_venv/bin/activate
-
-# install dependencies
-pip install torch==1.9.0+cpu torchvision==0.10.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-```
-- Create a Transfer Function and copy the following code:
-```python
-import torch # we don't need to import it using site module
-
-@nrp.Robot2Neuron()
-def example_pytorch(t):
-    
-    tensor = torch.Tensor([t])
-    if t % 2 < 0.02:
-        clientLogger.info('Time: ', tensor)
-```
-- When you run a simulation, you will see the time printed every 2 secondes in the console logger inside the experiment.
-
 
 ### Install dependencies
 Some dependencies are needed to run the full project. This quick guide regroups all dependencies required to run the project. Here, we will keep the `pytorch` virtualenv created in the first quick guide. Type the following commands:
