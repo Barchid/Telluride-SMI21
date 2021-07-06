@@ -10,6 +10,6 @@ def init_vonenet(t, visual_extractor):
         
         # VONENET ARCHITECTURE
         import vonenet
-        visual_extractor.value = vonenet.get_model(model_arch='alexnet', pretrained=False, noise_mode=None).module
+        visual_extractor.value = vonenet.VOneNet(model_arch='cornets')
         clientLogger.info(visual_extractor.value)
         
