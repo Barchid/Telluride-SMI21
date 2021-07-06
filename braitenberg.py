@@ -5,14 +5,13 @@ This file contains the setup of the neuronal network running the Husky experimen
 from builtins import str
 # pragma: no cover
 
-__author__ = 'Lazar Mateev, Georg Hinkel'
+__author__ = 'Telluride 2021 SMI Project Team (the best team of the Workshop !!!)'
 
 from hbp_nrp_cle.brainsim import simulator as sim
 import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)
-
 
 def create_brain():
     """

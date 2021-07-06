@@ -9,7 +9,8 @@
   </ns1:brainModel>
   <ns1:bodyModel robotId="husky">husky_model/model.sdf</ns1:bodyModel>
   <ns1:transferFunction src="all_neurons_spike_monitor.py" active="false" priority="0" xsi:type="ns1:PythonTransferFunction" />
+  <ns1:transferFunction src="left_wheel_neuron_rate_monitor.py" active="false" priority="0" xsi:type="ns1:PythonTransferFunction" />
   <ns1:transferFunction src="eye_sensor_transmit.py" active="true" priority="0" xsi:type="ns1:PythonTransferFunction" />
   <ns1:transferFunction src="linear_twist.py" active="true" priority="0" xsi:type="ns1:PythonTransferFunction" />
-  <ns1:transferFunction src="left_wheel_neuron_rate_monitor.py" active="false" priority="0" xsi:type="ns1:PythonTransferFunction" />
+  <ns1:transferFunction src="init_vonenet.py" active="false" priority="0" xsi:type="ns1:PythonTransferFunction" />
 </ns1:bibi>

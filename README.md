@@ -9,7 +9,7 @@ Neurorobotics Platform (NRP) experience code used in the SMI Project for the Tel
     - ***Warning: the Windows Version on WSL2 is quite slow. Running on Linux is recommended.***
 - For simplicity during development, [attach your running NRP backend container on VSCode](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) with the Remote Containers extension. See [the tutorial of Antoine Detailler](https://www.youtube.com/watch?v=II2lpieBYe4&list=PLG-iqBTOyCO7pMslHsrsOm1qgvtdOwx0f&index=7) for more information.
 - **Download this repository as a ZIP file** and import it in the NRP using the "Import Zip" button
-![Import_ZIp](./Import_Zip.png) 
+![Import_ZIp](./Import_Zip.png)
 
 
 ## Quick guides
@@ -76,6 +76,15 @@ def example_pytorch(t):
         clientLogger.info('Time: ', tensor)
 ```
 - When you run a simulation, you will see the time printed every 2 secondes in the console logger inside the experiment.
+
+
+### Install dependencies for VOneNet
+Some dependencies are needed to run the project. This quick guide regroups all dependencies required to run the project. Here, we will keep the `pytorch` virtualenv created in the first quick guide. Type the following commands:
+
+```bash
+source ~/.opt/pytorch/bin/activate
+pip install git+https://github.com/dicarlolab/vonenet
+```
 
 ### Git management of this repository within the NRP
 To facilitate the collaboration between all contributors during the project, try to commit and push changes directly inside the docker container when you're working on the NRP. If you installed the Experiment in the NRP as showed in [the "Get Started" section](#get-started), you can directly commit changes by using a docker interactive terminal.
