@@ -22,4 +22,5 @@
     <cameraLookAt x="1.33815" y="-2.528" z="1.084" />
   </cameraPose>
   <cloneDate>2021-06-24T15:17:53</cloneDate>
+  <rosLaunch src="iba.launch" />
 </ExD>

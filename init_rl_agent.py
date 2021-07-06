@@ -9,16 +9,22 @@ def init_rl_agent(t, rl_agent):
         import site, os
         # WARNING: the path can change according to the python version you chose when initializing the virtualenv
         site.addsitedir(os.path.expanduser('~/.opt/tensorflow/lib/python3.8/site-packages'))
+        clientLogger.info('Tensorflow imports')
         import tensorflow as tf
         import tensorflow.keras as keras
         from tensorflow.tensorflow.keras.models import Model, Sequential
         from tensorflow.keras.layers import Dense, Activation, Flatten, Input, concatenate
         from tensorflow.keras.optimizers import Adam, RMSprop
+        
+        clientLogger.info('Keras-RL2 imports')
         from rl.agents import DDPGAgent
         from rl.memory import SequentialMemory
         from rl.random import OrnsteinUhlenbeckProcess
+        
+        clientLogger.info('Keras backend now')
         from tensorflow.keras import backend as K
 
+        clientLogger.info('Parameters definition')
         # PARAMETERS
         ###############################################################
         obs_shape = (6,) # TODO

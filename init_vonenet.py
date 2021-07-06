@@ -9,10 +9,18 @@ def init_vonenet(t, visual_extractor):
         site.addsitedir(os.path.expanduser('~/.opt/tensorflow/lib/python3.8/site-packages'))
         
         # ONNX ARCHITECTURE
+        clientLogger.info('Import ONNX')
         import onnx
+        
+        clientLogger.info('Import prepare')
         from onnx_tf.backend import prepare
-
-        visual_extractor.value = prepare(onnx.load('visual_extractor.onnx'))
+        
+        clientLogger.info('Loading ONNX file')
+        load = onnx.load('visual_extractor.onnx')
+        
+        clientLogger.info('Prepare the loaded ONNX graph')
+        visual_extractor.value = prepare(load)
+        
         clientLogger.info(visual_extractor.value)
         clientLogger.info('visual_extractor VARIABLE CORRECTLY INITIALIZED')
         
