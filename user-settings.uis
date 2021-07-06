@@ -44,27 +44,61 @@
       },
       "content": [
         {
-          "type": "stack",
+          "type": "row",
           "isClosable": true,
           "reorderEnabled": true,
           "title": "",
-          "activeItemIndex": 0,
           "content": [
             {
-              "type": "component",
-              "title": "Environment Rendering",
-              "id": "environment-rendering",
-              "componentName": "angularModuleComponent",
-              "componentState": {
-                "module": "environmentRenderingModule",
-                "angularDirective": "<environment-rendering />",
-                "singleton": true
-              },
-              "isClosable": false,
-              "customOptionsDirective": "<environment-rendering-options/>",
-              "pwidth": 800,
-              "pheight": 600,
-              "reorderEnabled": true
+              "type": "stack",
+              "width": 66.66666666666666,
+              "isClosable": true,
+              "reorderEnabled": true,
+              "title": "",
+              "activeItemIndex": 0,
+              "content": [
+                {
+                  "type": "component",
+                  "title": "Environment Rendering",
+                  "id": "environment-rendering",
+                  "componentName": "angularModuleComponent",
+                  "componentState": {
+                    "module": "environmentRenderingModule",
+                    "angularDirective": "<environment-rendering />",
+                    "singleton": true
+                  },
+                  "isClosable": false,
+                  "customOptionsDirective": "<environment-rendering-options/>",
+                  "pwidth": 800,
+                  "pheight": 600,
+                  "reorderEnabled": true
+                }
+              ]
+            },
+            {
+              "type": "stack",
+              "isClosable": true,
+              "reorderEnabled": true,
+              "title": "",
+              "activeItemIndex": 0,
+              "width": 33.33333333333333,
+              "content": [
+                {
+                  "type": "component",
+                  "title": "Log Console",
+                  "id": "log-console",
+                  "componentName": "angularModuleComponent",
+                  "componentState": {
+                    "module": "exdFrontendApp",
+                    "angularDirective": "<log-console />",
+                    "singleton": true
+                  },
+                  "pwidth": 400,
+                  "pheight": 300,
+                  "isClosable": true,
+                  "reorderEnabled": true
+                }
+              ]
             }
           ]
         }
@@ -72,6 +106,7 @@
       "isClosable": true,
       "reorderEnabled": true,
       "title": "",
+      "width": 66.66666666666667,
       "openPopouts": [],
       "maximisedItemId": null
     }

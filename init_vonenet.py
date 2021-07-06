@@ -9,7 +9,7 @@ def init_vonenet(t, visual_extractor):
         site.addsitedir(os.path.expanduser('~/.opt/pytorch/lib/python3.8/site-packages'))
         
         # VONENET ARCHITECTURE
-        import vonenet
-        visual_extractor.value = vonenet.VOneNet(model_arch='cornets')
+        import torch
+        visual_extractor.value = torch.load('visual_extractor.pt')
         clientLogger.info(visual_extractor.value)
         
