@@ -1,4 +1,4 @@
-@nrp.MapVariable("visual_extractor", initial_value=None)
+@nrp.MapVariable("visual_extractor", initial_value=None, scope=nrp.GLOBAL)
 @nrp.Robot2Neuron()
 def init_vonenet(t, visual_extractor):
     if visual_extractor.value is None:
@@ -12,4 +12,5 @@ def init_vonenet(t, visual_extractor):
         import torch
         visual_extractor.value = torch.load('visual_extractor.pt')
         clientLogger.info(visual_extractor.value)
+        clientLogger.info('visual_extractor VARIABLE CORRECTLY INITIALIZED')
         

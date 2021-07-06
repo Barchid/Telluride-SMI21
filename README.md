@@ -78,12 +78,12 @@ def example_pytorch(t):
 - When you run a simulation, you will see the time printed every 2 secondes in the console logger inside the experiment.
 
 
-### Install dependencies for VOneNet
-Some dependencies are needed to run the project. This quick guide regroups all dependencies required to run the project. Here, we will keep the `pytorch` virtualenv created in the first quick guide. Type the following commands:
+### Install dependencies
+Some dependencies are needed to run the full project. This quick guide regroups all dependencies required to run the project. Here, we will keep the `pytorch` virtualenv created in the first quick guide. Type the following commands:
 
 ```bash
 source ~/.opt/pytorch/bin/activate
-pip install git+https://github.com/dicarlolab/vonenet
+pip install pfrl
 ```
 
 ### Git management of this repository within the NRP
