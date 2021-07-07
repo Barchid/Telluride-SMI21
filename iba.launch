@@ -1,4 +1,4 @@
 <launch>
-  <node name="manager_module" pkg="iba_multimodule_experiment_folder" type="manager_module.py" respawn="false" output="screen" />
+  <node name="manager_module" pkg="iba_manager" type="external_module_manager.py" respawn="false" output="screen" />
   <node name="smi21_dvs_sim" pkg="smi21" type="dvs_sim.py" respawn="false" output="screen" />
 </launch>
