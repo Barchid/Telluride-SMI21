@@ -1,0 +1,3 @@
+<launch>
+	<node name="dvs_sim_standalone" pkg="smi21" type="standalone_dvs_conversion.py" respawn="false" output="screen" />
+</launch>
