@@ -50,7 +50,7 @@ AGENT_WEIGHT_FILE = None
 OBS_SIZE = 10
 N_ACTIONS = 1
 USE_GPU = -1 # -1 stands for "no"
-IMAGE_DIMENSION = (3, 224, 224) # (C, H, W) format
+IMAGE_DIMENSION = (3, 64, 64) # (C, H, W) format
 VISUAL_ARCH = 'cornets'
 LR = 1e-2
 
@@ -213,7 +213,7 @@ class Module2(ExternalModule):
             return
 
         tick = time.time()
-        if tick - self.tick < 2.0:
+        if (tick - self.tick) < 1.0:
             return
 
         self.tick = tick
@@ -224,9 +224,9 @@ class Module2(ExternalModule):
             self.image = self.transform_image(image)
             #self.image = self.image.unsqueeze(0)
 
-            #self._log_file('Wait for contact', file='log.txt')
-            #contact_data = rospy.wait_for_message('/contact_state', ContactsState)
-            #self._log_file(f"\n\n\n{contact_data}", file='log.txt')
+            self._log_file('Wait for contact', file='log.txt')
+            contact_data = rospy.wait_for_message('/contact_state', ContactsState)
+            self._log_file(f"\n\n\n{contact_data}", file='log.txt')
 
             # OBSERVATIONS HANDLING FROM PREVIOUS ACTIONS
             is_episode_end = self._handle_observation()

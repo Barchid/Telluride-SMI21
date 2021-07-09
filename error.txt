@@ -1,0 +1,8 @@
+
+rospy shutdown
+Traceback (most recent call last):
+  File "/home/bbpnrsoa/nrp/src/GazeboRosPackages/src/iba_multimodule_experiment/scripts/module2.py", line 228, in camera_callback
+    contact_data = rospy.wait_for_message('/contact_state', ContactsState)
+  File "/opt/ros/noetic/lib/python3/dist-packages/rospy/client.py", line 428, in wait_for_message
+    raise rospy.exceptions.ROSInterruptException("rospy shutdown")
+rospy.exceptions.ROSInterruptException: rospy shutdown

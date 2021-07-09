@@ -48,11 +48,10 @@
           "isClosable": true,
           "reorderEnabled": true,
           "title": "",
-          "width": 75,
           "content": [
             {
               "type": "stack",
-              "width": 40,
+              "width": 41.22383252818035,
               "isClosable": true,
               "reorderEnabled": true,
               "title": "",
@@ -77,61 +76,26 @@
               ]
             },
             {
-              "type": "row",
+              "type": "stack",
               "isClosable": true,
               "reorderEnabled": true,
               "title": "",
-              "width": 60,
+              "activeItemIndex": 0,
+              "width": 58.77616747181964,
               "content": [
                 {
-                  "type": "stack",
+                  "type": "component",
+                  "title": "Robot Camera Rendering",
+                  "id": "robot-camera-rendering",
+                  "componentName": "angularModuleComponent",
+                  "componentState": {
+                    "module": "environmentRenderingModule",
+                    "angularDirective": "<environment-rendering />"
+                  },
+                  "pwidth": 300,
+                  "pheight": 200,
                   "isClosable": true,
-                  "reorderEnabled": true,
-                  "title": "",
-                  "activeItemIndex": 0,
-                  "width": 75,
-                  "content": [
-                    {
-                      "type": "component",
-                      "title": "TF Editor",
-                      "id": "transfer-function-editor",
-                      "componentName": "angularModuleComponent",
-                      "componentState": {
-                        "module": "exdFrontendApp",
-                        "angularDirective": "<transfer-function-editor />",
-                        "singleton": true
-                      },
-                      "pwidth": 900,
-                      "pheight": 700,
-                      "isClosable": true,
-                      "reorderEnabled": true
-                    }
-                  ]
-                },
-                {
-                  "type": "stack",
-                  "isClosable": true,
-                  "reorderEnabled": true,
-                  "title": "",
-                  "activeItemIndex": 0,
-                  "width": 25,
-                  "content": [
-                    {
-                      "type": "component",
-                      "title": "Object Inspector",
-                      "id": "object-inspector",
-                      "componentName": "angularModuleComponent",
-                      "componentState": {
-                        "module": "exdFrontendApp",
-                        "angularDirective": "<object-inspector />",
-                        "singleton": true
-                      },
-                      "pwidth": 300,
-                      "pheight": 800,
-                      "isClosable": true,
-                      "reorderEnabled": true
-                    }
-                  ]
+                  "reorderEnabled": true
                 }
               ]
             }
@@ -141,7 +105,7 @@
       "isClosable": true,
       "reorderEnabled": true,
       "title": "",
-      "width": 47.05882352941176,
+      "width": 72.72727272727272,
       "openPopouts": [],
       "maximisedItemId": null
     }
