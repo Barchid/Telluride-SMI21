@@ -6,9 +6,12 @@ This module will run eight times during every CLE loop and will output a log mes
 
 __author__ = 'Omer Yilmaz'
 
+import random
+import traceback
 import rospy
 from external_module_interface.external_module import ExternalModule
 import tf
+from gazebo_msgs.msg import ContactsState
 from geometry_msgs.msg import Twist
 from gazebo_msgs.srv import GetModelState
 import pfrl
@@ -32,21 +35,21 @@ EPISODE_NUMBER = 0
 # Reward configurations
 R_COLLISION = -10 # reward when collision
 R_ARRIVED = 100 # reward when robot arrived
-C_R = 1 # judge arrival
+C_R = 100 # judge arrival
 C_D = 1 # DISTANCE MAX FOR THE ARRIVAL (if the robot2goal distance is less than this, the episode is over)
-C_P = 1   # time step penalty
-MAX_TIMESTEPS = 5000 # Max number of timesteps allowed before finishing the episode
+C_P = -0.05   # time step penalty
+MAX_TIMESTEPS = 100000 # Max number of timesteps allowed before finishing the episode
 
 # Action configuration
 IS_CONTINUOUS = False
-V_MAX = 10  # max linear velocity (for continuous)
-W_MAX = 10  # max angular velocity (for continuous)
+V_MAX = 0.3  # max linear velocity (for continuous)
+W_MAX = 1.0  # max angular velocity (for continuous)
 
 AGENT_WEIGHT_FILE = None
 OBS_SIZE = 10
-N_ACTIONS = 3
+N_ACTIONS = 1
 USE_GPU = -1 # -1 stands for "no"
-IMAGE_DIMENSION = (3, 112, 112) # (C, H, W) format
+IMAGE_DIMENSION = (3, 224, 224) # (C, H, W) format
 VISUAL_ARCH = 'cornets'
 LR = 1e-2
 
@@ -98,10 +101,13 @@ class Module2(ExternalModule):
             ])
 
             # initialize agent
-            self.agent = self._initialize_agent(2, VISUAL_ARCH, image_dimension=IMAGE_DIMENSION)
+            self.agent = self._initialize_agent(N_ACTIONS, VISUAL_ARCH, image_dimension=IMAGE_DIMENSION)
 
             # initialize subscribers etc
             self._initialize_rospy()
+
+            # get goal position
+            self.goal = self.get_state("cylinder_0", "world").pose.position
 
             # get current distance from goal (will be used for the reward computation)
             robot_state = self._get_robot_state()
@@ -109,11 +115,14 @@ class Module2(ExternalModule):
             orientation = robot_state.pose.orientation
             self.previous_distance, _ = self._distance_from_goal(position, orientation)
 
+
             # Set episode state
             self.episode_reward = 0.0 # total reward calculated over the episode
             self.timestep = 0 # current number of timesteps (incremented after each run_step() call from the NRP experiment)
+
+            self._log_file('\nEnd INITIALIZE')
         except Exception as exc:
-            self._log_file(f"\n{exc}", file="error.txt")
+            self._log_file(f"\n{exc}\n{traceback.format_exc()}", file="error.txt")
 
     def _initialize_agent(self, n_actions, vonenet_arch='cornets', image_dimension=(224, 224), eps=1e-2):
         rospy.logwarn('Visual model get architecture')
@@ -148,7 +157,7 @@ class Module2(ExternalModule):
         gamma = 0.9
         # Use epsilon-greedy for exploration
         explorer = pfrl.explorers.ConstantEpsilonGreedy(
-            epsilon=0.3, random_action_func=None) #env.action_space.sample)
+            epsilon=0.3, random_action_func=lambda: random.uniform(0., 4.)) #env.action_space.sample)
 
         # DQN uses Experience Replay.
         # Specify a replay buffer and its capacity.
@@ -173,11 +182,15 @@ class Module2(ExternalModule):
                 replay_start_size=500,
                 update_interval=1,
                 target_update_interval=100,
-                phi=phi,
+                #phi=phi,
                 gpu=gpu,
             )
         
         rospy.logwarn('Agent initialized!')
+
+        if AGENT_WEIGHT_FILE is not None:
+            agent.load(AGENT_WEIGHT_FILE)
+
         return agent
 
     def _initialize_rospy(self):
@@ -192,21 +205,31 @@ class Module2(ExternalModule):
         if not self.capture_image:
             return
 
-        rospy.logwarn('Camera callback')
-
         try:
             image = np.frombuffer(img_msg.data, np.uint8).reshape((img_msg.height, img_msg.width, 3))
-
             # from np array to Tensor using the transform
             self.image = self.transform_image(image)
+            #self.image = self.image.unsqueeze(0)
 
-            # try inference
-            self.image = self.image.unsqueeze(0)
+            #self._log_file('Wait for contact', file='log.txt')
+            #contact_data = rospy.wait_for_message('/contact_state', ContactsState)
+            #self._log_file(f"\n\n\n{contact_data}", file='log.txt')
+
+            # OBSERVATIONS HANDLING FROM PREVIOUS ACTIONS
+            is_episode_end = self._handle_observation()
+            if is_episode_end:
+                return
+
+            # AGENT PRODUCES ITS ACTION
+            action = self.agent.act(self.image)
+
+            # ACTION HANDLING FOR CURRENT TIMESTEP
+            self._handle_action(action)
         except Exception as exc:
-            self._log_file(f"{exc}", file="error.txt")
+            self._log_file(f"\n{exc}\n{traceback.format_exc()}", file="error.txt")
             self.capture_image = False # stop from capturing image if this code does not work
 
-    def _log_file(self, message, file='log2.txt'):
+    def _log_file(self, message, file='log.txt'):
         """
         Short function to write some logs in a text file to debug the IBA module
         """
@@ -215,18 +238,27 @@ class Module2(ExternalModule):
         text_file.close()
 
     def run_step(self):
+        self._log_file('\nRUN_STEP')
         try:
+            self._log_file('Wait for contact', file='log.txt')
+            contact_data = rospy.wait_for_message('/contact_state', ContactsState)
+            self._log_file(f"\n\n\n{contact_data}", file='log.txt')
             # don't do anything if image has not been captured
             if self.image is None:
                 return
 
             # OBSERVATIONS HANDLING FROM PREVIOUS ACTIONS
-            self._handle_observation()
+            is_episode_end = self._handle_observation()
+            if is_episode_end:
+                return
+
+            # AGENT PRODUCES ITS ACTION
+            action = self.agent.act(self.image)
 
             # ACTION HANDLING FOR CURRENT TIMESTEP
-            self._handle_action()
+            self._handle_action(action)
         except Exception as exc:
-            self._log_file(f"\n{exc}", 'error.txt')
+            self._log_file(f"\n{exc}\n{traceback.format_exc()}", file="error.txt")
 
     def share_module_data(self):
         self.module_data = [0, 0, 5.1]
@@ -236,6 +268,10 @@ class Module2(ExternalModule):
         Handles the reward computation from the current observations (i.e. image from previous timestep).
         Function called by "run_step"
         """
+        # Don't do anything in timestep 0 (because there was no previous action)
+        if self.timestep == 0:
+            return
+
         # GET robot state
         robot_state = self._get_robot_state()
         position = robot_state.pose.position
@@ -249,11 +285,9 @@ class Module2(ExternalModule):
         # COMPUTE reward AND end_of_episode
         reward, has_arrived = self._compute_reward(
             is_collision=False,
-            distance=distance,
-            previous_distance=self.previous_distance
+            distance=distance
         )
-
-        # TRAIN AGENT TODO
+        self.previous_distance = distance
 
         # ADD reward TO episode_reward
         self.episode_reward += reward
@@ -261,10 +295,23 @@ class Module2(ExternalModule):
         # INCREMENT TIMESTEP
         self.timestep += 1
 
-        # IF [end of the episode] THEN [end episode handling]
+        self._log_file(f"\nTimestep={self.timestep}, Reward={reward}, Distance2Goal={distance}, Position=({position.x, position.y})")
+
+        # AGENT OBSERVES
+        self.agent.observe(
+            obs=self.image,
+            reward=reward,
+            done=has_arrived,
+            reset= self.timestep >= MAX_TIMESTEPS
+        )
+
+        # CHECK end of episode
         is_episode_end = has_arrived or self.timestep >= MAX_TIMESTEPS
+
         if is_episode_end:
-            pass
+            self.end_episode(is_episode_end)
+
+        return is_episode_end
 
     def _get_robot_state(self):
         robot_state = None
@@ -278,8 +325,8 @@ class Module2(ExternalModule):
         Computes the distance between the robot and the goal object (i.e. cylinder_0).
         Function called by _handle_observation
         """
-        d_x = self.goal[0] - position.x
-        d_y = self.goal[1] - position.y
+        d_x = self.goal.x - position.x
+        d_y = self.goal.y - position.y
 
         _, _, theta = tf.transformations.euler_from_quaternion(
             [orientation.x, orientation.y, orientation.z, orientation.w])
@@ -291,7 +338,7 @@ class Module2(ExternalModule):
 
     
 
-    def _compute_reward(self, is_collision, distance, previous_distance):
+    def _compute_reward(self, is_collision, distance):
         """
         Computes and returns the reward value from the observations in parameters.
         Function called by "_handle_observations".
@@ -307,15 +354,20 @@ class Module2(ExternalModule):
             return R_COLLISION, has_arrived
 
         # CASE: compute proportional distance depending on the previous distance
-        delta_d = previous_distance - distance
+        delta_d = self.previous_distance - distance
         return C_R*delta_d + C_P, has_arrived
 
     def _handle_action(self, action):
+        """
+        Applies the action (in parameter) produced by the agent.
+        """
+        self._log_file(f'\naction={action}')
         vel_cmd = Twist()
         if IS_CONTINUOUS:
             vel_cmd.linear.x = V_MAX*action['linear_vel']
             vel_cmd.angular.z = W_MAX*action['angular_vel']
         else:
+            action = round(action)
             # 3 actions
             if action == 0:  # Left
                 vel_cmd.linear.x = 0.25
@@ -338,13 +390,13 @@ class Module2(ExternalModule):
         self.vel_cmd = [vel_cmd.linear.x, vel_cmd.angular.z]
         self.vel_pub.publish(vel_cmd)
 
-    def end_episode(self, has_arrived):
+    def end_episode(self, is_episode_end):
         """
         Handles the end of the episode
         """
         # LOG the episode's stats
         self._log_file(
-            f"\n{self.episode_reward},{self.timestep},{has_arrived}",
+            f"\n{self.episode_reward},{self.timestep},{is_episode_end}\n{self.agent.get_statistics()}",
             file=f"episode_{EPISODE_NUMBER}.txt"
         )
 
