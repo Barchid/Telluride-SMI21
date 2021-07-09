@@ -6,6 +6,7 @@ This module will run eight times during every CLE loop and will output a log mes
 
 __author__ = 'Omer Yilmaz'
 
+import time
 import random
 import traceback
 import rospy
@@ -36,7 +37,7 @@ EPISODE_NUMBER = 0
 R_COLLISION = -10 # reward when collision
 R_ARRIVED = 100 # reward when robot arrived
 C_R = 100 # judge arrival
-C_D = 1 # DISTANCE MAX FOR THE ARRIVAL (if the robot2goal distance is less than this, the episode is over)
+C_D = 1.1 # DISTANCE MAX FOR THE ARRIVAL (if the robot2goal distance is less than this, the episode is over)
 C_P = -0.05   # time step penalty
 MAX_TIMESTEPS = 100000 # Max number of timesteps allowed before finishing the episode
 
@@ -120,6 +121,12 @@ class Module2(ExternalModule):
             self.episode_reward = 0.0 # total reward calculated over the episode
             self.timestep = 0 # current number of timesteps (incremented after each run_step() call from the NRP experiment)
 
+            # vel_cmd
+            self.vel_cmd = [0.0, 0.0]
+
+            # measure time
+            self.tick = time.time()
+
             self._log_file('\nEnd INITIALIZE')
         except Exception as exc:
             self._log_file(f"\n{exc}\n{traceback.format_exc()}", file="error.txt")
@@ -198,12 +205,18 @@ class Module2(ExternalModule):
         Initializes all rospy proxies/subscribers/publishers to interact with the environment
         """
         self.get_state = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
-        self.vel_pub = rospy.Publisher('/mobile_base/commands/velocity', Twist)
+        self.vel_pub = rospy.Publisher('/husky/husky/cmd_vel', Twist)
 
     def camera_callback(self, img_msg):
         # check if the callback is still allowed to capture images
         if not self.capture_image:
             return
+
+        tick = time.time()
+        if tick - self.tick < 2.0:
+            return
+
+        self.tick = tick
 
         try:
             image = np.frombuffer(img_msg.data, np.uint8).reshape((img_msg.height, img_msg.width, 3))
@@ -239,26 +252,26 @@ class Module2(ExternalModule):
 
     def run_step(self):
         self._log_file('\nRUN_STEP')
-        try:
-            self._log_file('Wait for contact', file='log.txt')
-            contact_data = rospy.wait_for_message('/contact_state', ContactsState)
-            self._log_file(f"\n\n\n{contact_data}", file='log.txt')
-            # don't do anything if image has not been captured
-            if self.image is None:
-                return
+        # try:
+        #     self._log_file('Wait for contact', file='log.txt')
+        #     contact_data = rospy.wait_for_message('/contact_state', ContactsState)
+        #     self._log_file(f"\n\n\n{contact_data}", file='log.txt')
+        #     # don't do anything if image has not been captured
+        #     if self.image is None:
+        #         return
 
-            # OBSERVATIONS HANDLING FROM PREVIOUS ACTIONS
-            is_episode_end = self._handle_observation()
-            if is_episode_end:
-                return
+        #     # OBSERVATIONS HANDLING FROM PREVIOUS ACTIONS
+        #     is_episode_end = self._handle_observation()
+        #     if is_episode_end:
+        #         return
 
-            # AGENT PRODUCES ITS ACTION
-            action = self.agent.act(self.image)
+        #     # AGENT PRODUCES ITS ACTION
+        #     action = self.agent.act(self.image)
 
-            # ACTION HANDLING FOR CURRENT TIMESTEP
-            self._handle_action(action)
-        except Exception as exc:
-            self._log_file(f"\n{exc}\n{traceback.format_exc()}", file="error.txt")
+        #     # ACTION HANDLING FOR CURRENT TIMESTEP
+        #     self._handle_action(action)
+        # except Exception as exc:
+        #     self._log_file(f"\n{exc}\n{traceback.format_exc()}", file="error.txt")
 
     def share_module_data(self):
         self.module_data = [0, 0, 5.1]
@@ -268,10 +281,6 @@ class Module2(ExternalModule):
         Handles the reward computation from the current observations (i.e. image from previous timestep).
         Function called by "run_step"
         """
-        # Don't do anything in timestep 0 (because there was no previous action)
-        if self.timestep == 0:
-            return
-
         # GET robot state
         robot_state = self._get_robot_state()
         position = robot_state.pose.position
@@ -292,18 +301,18 @@ class Module2(ExternalModule):
         # ADD reward TO episode_reward
         self.episode_reward += reward
 
+        if self.timestep > 0:
+            # AGENT OBSERVES
+            self.agent.observe(
+                obs=self.image,
+                reward=reward,
+                done=has_arrived,
+                reset= self.timestep >= MAX_TIMESTEPS
+            )
+
         # INCREMENT TIMESTEP
+        self._log_file(f"\nTimestep={self.timestep}, Reward={reward}, Distance2Goal={distance}, Position=({position.x, position.y}), cmd=({self.vel_cmd[0]},{self.vel_cmd[1]})")
         self.timestep += 1
-
-        self._log_file(f"\nTimestep={self.timestep}, Reward={reward}, Distance2Goal={distance}, Position=({position.x, position.y})")
-
-        # AGENT OBSERVES
-        self.agent.observe(
-            obs=self.image,
-            reward=reward,
-            done=has_arrived,
-            reset= self.timestep >= MAX_TIMESTEPS
-        )
 
         # CHECK end of episode
         is_episode_end = has_arrived or self.timestep >= MAX_TIMESTEPS
@@ -346,7 +355,7 @@ class Module2(ExternalModule):
         has_arrived = distance <= C_D
 
         # CASE: robot has arrived (game is over)
-        if distance < C_D:
+        if distance <= C_D:
             return R_ARRIVED, has_arrived
 
         # CASE: robot has collided
@@ -370,20 +379,20 @@ class Module2(ExternalModule):
             action = round(action)
             # 3 actions
             if action == 0:  # Left
-                vel_cmd.linear.x = 0.25
-                vel_cmd.angular.z = 1.0
+                vel_cmd.linear.x = 0.25 *4
+                vel_cmd.angular.z = 1.0 *4
             elif action == 1:  # H-LEFT
-                vel_cmd.linear.x = 0.25
-                vel_cmd.angular.z = 0.4
+                vel_cmd.linear.x = 0.25 *4
+                vel_cmd.angular.z = 0.4 *4
             elif action == 2:  # Straight
-                vel_cmd.linear.x = 0.25
-                vel_cmd.angular.z = 0
+                vel_cmd.linear.x = 0.25 *4
+                vel_cmd.angular.z = 0 *4
             elif action == 3:  # H-Right
-                vel_cmd.linear.x = 0.25
-                vel_cmd.angular.z = -0.4
+                vel_cmd.linear.x = 0.25 *4
+                vel_cmd.angular.z = -0.4 *4
             elif action == 4:  # Right
-                vel_cmd.linear.x = 0.25
-                vel_cmd.angular.z = -1.0
+                vel_cmd.linear.x = 0.25 *4
+                vel_cmd.angular.z = -1.0 *4
             else:
                 raise Exception('Error discrete action: {}'.format(action))
 
