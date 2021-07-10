@@ -1,8 +1,32 @@
 
-rospy shutdown
+unable to connect to service: [Errno 104] Connection reset by peer
 Traceback (most recent call last):
-  File "/home/bbpnrsoa/nrp/src/GazeboRosPackages/src/iba_multimodule_experiment/scripts/module2.py", line 228, in camera_callback
-    contact_data = rospy.wait_for_message('/contact_state', ContactsState)
-  File "/opt/ros/noetic/lib/python3/dist-packages/rospy/client.py", line 428, in wait_for_message
-    raise rospy.exceptions.ROSInterruptException("rospy shutdown")
-rospy.exceptions.ROSInterruptException: rospy shutdown
+  File "/opt/ros/noetic/lib/python3/dist-packages/rospy/impl/tcpros_base.py", line 562, in connect
+    self.read_header()
+  File "/opt/ros/noetic/lib/python3/dist-packages/rospy/impl/tcpros_base.py", line 657, in read_header
+    self._validate_header(read_ros_handshake_header(sock, self.read_buff, self.protocol.buff_size))
+  File "/opt/ros/noetic/lib/python3/dist-packages/rosgraph/network.py", line 357, in read_ros_handshake_header
+    d = sock.recv(buff_size)
+ConnectionResetError: [Errno 104] Connection reset by peer
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/ros/noetic/lib/python3/dist-packages/rospy/impl/tcpros_service.py", line 509, in call
+    transport.connect(dest_addr, dest_port, service_uri)
+  File "/opt/ros/noetic/lib/python3/dist-packages/rospy/impl/tcpros_base.py", line 589, in connect
+    raise TransportInitError(str(e)) #re-raise i/o error
+rospy.exceptions.TransportInitError: [Errno 104] Connection reset by peer
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/bbpnrsoa/nrp/src/GazeboRosPackages/src/iba_multimodule_experiment/scripts/module2.py", line 226, in camera_callback
+    self._reinitialize()
+  File "/home/bbpnrsoa/nrp/src/GazeboRosPackages/src/iba_multimodule_experiment/scripts/module2.py", line 390, in _reinitialize
+    self.pause()
+  File "/opt/ros/noetic/lib/python3/dist-packages/rospy/impl/tcpros_service.py", line 442, in __call__
+    return self.call(*args, **kwds)
+  File "/opt/ros/noetic/lib/python3/dist-packages/rospy/impl/tcpros_service.py", line 512, in call
+    raise ServiceException("unable to connect to service: %s"%e)
+rospy.service.ServiceException: unable to connect to service: [Errno 104] Connection reset by peer
