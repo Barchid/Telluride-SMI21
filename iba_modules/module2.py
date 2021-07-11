@@ -27,6 +27,7 @@ import torch.optim as optim
 from torchvision import transforms
 import cv2
 import numpy
+import torchvision
 from torchvision.transforms.transforms import Lambda, ToTensor
 #from gazebo_msgs.msgs import WheelSpeeds
 import vonenet
@@ -35,11 +36,12 @@ import numpy as np
 import math
 from gazebo_msgs.msg import ModelState
 
-# EPISODE CONFIGURATION
+# EXPERIMENT CONFIGURATION
+EXPERIENCE_NAME = 'mobilenetv3_RGB'
 EPOCH_NUMBER = 0
 
 # Reward configurations
-R_COLLISION = -50 # reward when collision
+R_COLLISION = -100 # reward when collision
 R_ARRIVED = 100 # reward when robot arrived
 C_R = 100 # judge arrival
 C_D = 1.1 # DISTANCE MAX FOR THE ARRIVAL (if the robot2goal distance is less than this, the episode is over)
@@ -49,10 +51,11 @@ MAX_TIMESTEPS = 100000 # Max number of timesteps allowed before finishing the ep
 # Action configuration
 
 AGENT_WEIGHT_FILE = None # path of a weight file to load before launching the training
-N_ACTIONS = 1 # Number of actions. =2 for continuous values and =1 for discrete mode
+N_ACTIONS = 5 # Number of actions. =2 for continuous values and =1 for discrete mode
 USE_GPU = -1 # -1 stands for "no"
 IMAGE_DIMENSION = (3, 64, 64) # (C, H, W) format for the RGB images
-VISUAL_ARCH = 'cornets' # architecture of the visual extractor. can be: 'cornets', 'resnet50' or 'alexnet'
+VISUAL_ARCH = None # architecture of the visual extractor. can be: 'cornets', 'resnet50' or 'alexnet' or None for a basic mobilenetv3 network
+VISUAL_PRETRAINED = True # flag to indicate the pretraining of visual extractor?
 LR = 1e-2 # Learning rate
 
 
@@ -107,7 +110,9 @@ class Module2(ExternalModule):
             ])
 
             # initialize agent
-            self.agent = self._initialize_agent(N_ACTIONS, VISUAL_ARCH, image_dimension=IMAGE_DIMENSION)
+            self.agent = self._initialize_agent(
+                vonenet_arch=VISUAL_ARCH
+            )
 
             # initialize subscribers etc
             self._initialize_rospy()
@@ -142,19 +147,21 @@ class Module2(ExternalModule):
         except Exception as exc:
             self._log_file(f"\n{exc}\n{traceback.format_exc()}", file="error.txt")
 
-    def _initialize_agent(self, n_actions, vonenet_arch='cornets', image_dimension=(224, 224), eps=1e-2):
+    def _initialize_agent(self, vonenet_arch='cornets', eps=1e-2):
         rospy.logwarn('Visual model get architecture')
         # get vonenet visual feature extractor
-        visual_model = vonenet.get_model(
-            model_arch=vonenet_arch,
-            pretrained=True
-        )
+        if VISUAL_ARCH is not None:
+            visual_model = vonenet.get_model(
+                model_arch=vonenet_arch,
+                pretrained=VISUAL_PRETRAINED
+            )
+        else:
+            visual_model = torchvision.models.mobilenet.mobilenet_v3_small(pretrained=VISUAL_PRETRAINED)
         self.visual_model = visual_model
 
         rospy.logwarn('Define Q-Function')
 
-        network = None
-        network = QFunction(visual_model, n_actions=1)
+        network = QFunction(visual_model, n_actions=N_ACTIONS)
 
         # Use Adam to optimize q_func. eps=1e-2 is for stability.
         optimizer = torch.optim.Adam(network.parameters(), lr=LR, eps=eps)
@@ -163,7 +170,7 @@ class Module2(ExternalModule):
         gamma = 0.9
         # Use epsilon-greedy for exploration
         explorer = pfrl.explorers.ConstantEpsilonGreedy(
-            epsilon=0.3, random_action_func=lambda: random.uniform(0., 4.)) #env.action_space.sample)
+            epsilon=0.3, random_action_func=lambda: random.uniform(0., 5.)) #env.action_space.sample)
 
         # DQN uses Experience Replay.
         # Specify a replay buffer and its capacity.
@@ -180,7 +187,7 @@ class Module2(ExternalModule):
             replay_buffer,
             gamma,
             explorer,
-            replay_start_size=500,
+            replay_start_size=32,#500,
             update_interval=1,
             target_update_interval=100,
             gpu=gpu,
@@ -289,7 +296,14 @@ class Module2(ExternalModule):
         is_episode_end = has_arrived or self.timestep >= MAX_TIMESTEPS or self.has_collided
 
         if is_episode_end:
-            self.end_episode(is_episode_end)
+            end_episode_reason = ""
+            if has_arrived:
+                end_episode_reason = 'success'
+            elif self.has_collided:
+                end_episode_reason = 'collision'
+            else:
+                end_episode_reason = 'timesteps'
+            self.end_episode(end_episode_reason=end_episode_reason)
 
         return is_episode_end
 
@@ -343,7 +357,6 @@ class Module2(ExternalModule):
         """
         vel_cmd = Twist()
         action = max(0, min(int(action), 4)) # clamp between 0 and 4
-        self._log_file(f'\naction={action}')
         # 3 actions
         if action == 0:  # Left
             vel_cmd.linear.x = 0.25
@@ -363,23 +376,23 @@ class Module2(ExternalModule):
         else:
             raise Exception('Error discrete action: {}'.format(action))
 
-        self.vel_cmd = [vel_cmd.linear.x, vel_cmd.angular.z]
+        self.vel_cmd = [vel_cmd.linear.x * 1.5, vel_cmd.angular.z * 1.5]
         self.vel_pub.publish(vel_cmd)
 
 
-    def end_episode(self, is_episode_end):
+    def end_episode(self, end_episode_reason):
         """
         Handles the end of the episode
         """
         # LOG the episode's stats
         self._log_file(
-            f"\n{self.episode_reward},{self.timestep},{is_episode_end}\n{self.agent.get_statistics()}",
-            file=f"agent_logs/epoch{EPOCH_NUMBER}_episode{self.episode}.txt"
+            f"\nreward={self.episode_reward}\ntimestep={self.timestep}\nend_episod_reason={end_episode_reason}\n{self.agent.get_statistics()}",
+            file=f"agent_logs/{EXPERIENCE_NAME}_epoch{EPOCH_NUMBER}_episode{self.episode}.txt"
         )
 
         # save the weights every 50 episodes
         if self.episode%50==0:
-            self.agent.save(f"/home/bbpnrsoa/.opt/nrpStorage/telluride_maze_husky_0_0_0/agent/agent_DQN_epoch{EPOCH_NUMBER}_episode_{self.episode}")
+            self.agent.save(f"/home/bbpnrsoa/.opt/nrpStorage/telluride_maze_husky_0_0_0/agent/{EXPERIENCE_NAME}_epoch{EPOCH_NUMBER}_episode{self.episode}")
 
 
     def _reinitialize(self):
@@ -422,7 +435,7 @@ class Module2(ExternalModule):
         state.model_name = 'cylinder_0'
         state.reference_frame = 'world'  # ''ground_plane'
         state.pose.position.x = 6.589 # hardcoded values from experiment
-        state.pose.position.y = -1.442
+        state.pose.position.y = 0.511
         state.pose.position.z = 1.208
         state.scale.x = 1
         state.scale.y = 1
